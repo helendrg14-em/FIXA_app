@@ -5,19 +5,19 @@ import 'package:provider/provider.dart';
 import 'core/config.dart';
 import 'core/router.dart';
 import 'core/tema.dart';
-import 'data/api_client.dart';
-import 'data/incidencias_repository.dart';
-import 'features/incidencias/incidencias_provider.dart';
+import 'data/almacen_local.dart';
+import 'data/api_repositorio.dart';
+import 'data/mis_reportes.dart';
+import 'data/mock_repositorio.dart';
+import 'data/repositorio.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final IncidenciasRepository repo = AppConfig.usarMock
-      ? MockIncidenciasRepository()
-      : ApiIncidenciasRepository(ApiClient());
+  final Repositorio repositorio = AppConfig.usarMock ? MockRepositorio() : ApiRepositorio();
 
   runApp(ChangeNotifierProvider(
-    create: (_) => IncidenciasProvider(repo),
+    create: (_) => MisReportes(repositorio, AlmacenLocal())..cargar(),
     child: FixaApp(router: crearRouter()),
   ));
 }
