@@ -1,12 +1,13 @@
-/// Configuración global de la app.
+/// Configuración global de la app. Los valores se pueden cambiar al compilar, sin tocar el código:
+/// `flutter run --dart-define=FIXA_MOCK=false --dart-define=FIXA_API=https://...`
 class AppConfig {
-  /// Mientras no exista el backend Laravel, la app usa datos en memoria.
-  /// Cambiar a `false` cuando la API esté corriendo.
-  static const bool usarMock = true;
+  /// Con `true` la app usa datos de ejemplo en memoria y no llama a la API.
+  static const bool usarMock = bool.fromEnvironment('FIXA_MOCK', defaultValue: false);
 
-  /// URL de la API Laravel. Desde el emulador Android, `10.0.2.2`
-  /// apunta al `localhost` de tu PC (`php artisan serve` usa el puerto 8000).
-  static const String apiBaseUrl = 'http://10.0.2.2:8000/api';
+  /// API .NET de FIXA (Fixa_API) desplegada en Render. Para probar con la API de tu PC:
+  /// `--dart-define=FIXA_API=http://10.0.2.2:5112/api/v1/publico` (10.0.2.2 es tu PC vista desde el emulador).
+  static const String apiBaseUrl =
+      String.fromEnvironment('FIXA_API', defaultValue: 'https://fixa-api-nhua.onrender.com/api/v1/publico');
 
   /// Centro de Santa Cruz de la Sierra (plaza 24 de Septiembre).
   static const double latInicial = -17.7834;
