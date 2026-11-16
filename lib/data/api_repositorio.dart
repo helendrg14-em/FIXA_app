@@ -10,12 +10,17 @@ class ApiRepositorio implements Repositorio {
       : _dio = dio ??
             Dio(BaseOptions(
               baseUrl: AppConfig.apiBaseUrl,
-              connectTimeout: const Duration(seconds: 15),
-              receiveTimeout: const Duration(seconds: 30),
+              // Render gratis se duerme sin tráfico y tarda hasta un minuto en despertar.
+              connectTimeout: const Duration(seconds: 30),
+              receiveTimeout: const Duration(seconds: 90),
               headers: {'Accept': 'application/json'},
             ));
 
   final Dio _dio;
+
+  /// Render gratis se duerme sin tráfico: se despierta la API al abrir la app, para que el
+  /// primer envío del vecino no espere. Si falla no pasa nada: es solo un aviso.
+  void despertar() => _dio.getUri<void>(Uri.parse(AppConfig.apiBaseUrl).resolve('/salud')).ignore();
 
   /// Pasa cualquier fallo a un mensaje que el vecino entienda.
   Future<T> _llamar<T>(Future<T> Function() pedido) async {

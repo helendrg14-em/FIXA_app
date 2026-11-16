@@ -15,6 +15,7 @@ void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   final Repositorio repositorio = AppConfig.usarMock ? MockRepositorio() : ApiRepositorio();
+  if (repositorio is ApiRepositorio) repositorio.despertar();
 
   runApp(ChangeNotifierProvider(
     create: (_) => MisReportes(repositorio, AlmacenLocal())..cargar(),
