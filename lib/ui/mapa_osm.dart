@@ -58,7 +58,7 @@ class MapaOsm extends StatelessWidget {
           const SimpleAttributionWidget(
             source: Text('© OpenStreetMap',
                 style: TextStyle(fontSize: 11, color: FixaColores.tinta2)),
-            backgroundColor: FixaColores.blanco,
+            backgroundColor: Colors.transparent,
           ),
         ],
       );

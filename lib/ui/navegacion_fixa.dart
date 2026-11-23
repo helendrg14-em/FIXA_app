@@ -11,7 +11,7 @@ class NavegacionFixa extends StatelessWidget {
 
   static const _destinos = [
     ('/', 'Inicio', Icons.home_outlined),
-    ('/mapa', 'Mapa', Icons.map_outlined),
+    ('/seguir', 'Seguir reporte', Icons.search_outlined),
     ('/mis-reportes', 'Mis reportes', Icons.format_list_bulleted),
   ];
 

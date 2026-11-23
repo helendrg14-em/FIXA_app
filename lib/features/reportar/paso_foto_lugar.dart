@@ -176,11 +176,7 @@ class _PasoFotoLugarState extends State<PasoFotoLugar> {
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
-              const SizedBox(height: 8),
-              const Text('Evita incluir rostros o placas.',
-                  style: TextStyle(
-                      fontSize: 13,
-                      color: FixaColores.tinta2)),
+
             ],
           ),
         ),

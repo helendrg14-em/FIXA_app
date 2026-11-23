@@ -26,6 +26,10 @@ GoRouter crearRouter() => GoRouter(
               builder: (_, __) => const MapaScreen(),
             ),
             GoRoute(
+              path: '/seguir',
+              builder: (_, __) => const SeguirScreen(),
+            ),
+            GoRoute(
               path: '/mis-reportes',
               builder: (_, __) => const MisReportesScreen(),
             ),
@@ -41,7 +45,6 @@ GoRouter crearRouter() => GoRouter(
             return EnviadoScreen(creado: creado, guardado: guardado);
           },
         ),
-        GoRoute(path: '/seguir', builder: (_, __) => const SeguirScreen()),
         GoRoute(
           path: '/reporte/:codigo',
           builder: (_, estado) => DetalleScreen(
