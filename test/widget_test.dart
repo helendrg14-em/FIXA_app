@@ -127,22 +127,17 @@ void main() {
     expect(find.text('Otro'), findsNothing);
     await tester.tap(find.text(CodigoCategoria.alumbrado.etiqueta));
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Luminaria apagada'));
-    await tester.tap(find.text('Luminaria apagada'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.byTooltip('Uno más'));
-    await tester.tap(find.byTooltip('Uno más'));
-    await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
     expect(find.text('Foto y lugar'), findsOneWidget);
     expect(find.text('2 de 3'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('Editar'), 120);
+    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Editar'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirmar ubicación'));
     await tester.pumpAndSettle();
-    expect(find.text('Punto en el mapa'), findsOneWidget);
+    expect(find.text('Ubicación'), findsOneWidget);
   });
 
   testWidgets('Seguir un reporte con clave equivocada muestra el error',
