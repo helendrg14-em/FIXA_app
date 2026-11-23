@@ -61,7 +61,12 @@ class _ReportarScreenState extends State<ReportarScreen> {
     final apoyar = cercano == null
         ? false
         : await mostrarAlertaCercano(
-            context, cercano, _reporte.fichaCategoria!);
+            context,
+            cercano,
+            _reporte.fichaCategoria!,
+            direccion: _reporte.direccion?.titulo ?? _reporte.lugarVisible,
+            fotoFallback: _reporte.foto,
+          );
     if (!mounted) return;
     setState(() => _enviando = false);
     if (apoyar == true) {
@@ -184,10 +189,21 @@ class _PasoDetalle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final categoria = reporte.fichaCategoria!;
+    final direccionTexto = [
+      reporte.direccion?.titulo,
+      reporte.direccion?.detalle,
+    ].whereType<String>().where((s) => s.isNotEmpty).join(' · ');
+
+    final ubicacionVisible = direccionTexto.isNotEmpty
+        ? direccionTexto
+        : (reporte.lugarVisible != 'Sin ubicación'
+            ? reporte.lugarVisible
+            : 'Av. Cañoto · Distrito 11');
+
     return Form(
       key: formulario,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(14, 6, 14, 24),
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
         children: [
           Text('Un último detalle', style: tituloFixa(23)),
           const SizedBox(height: 16),
@@ -201,36 +217,58 @@ class _PasoDetalle extends StatelessWidget {
             readOnly: bloqueado,
             textCapitalization: TextCapitalization.sentences,
             decoration: const InputDecoration(
-              hintText: 'Describe el problema',
+              hintText:
+                  'Bache profundo en el carril derecho. Los vehículos deben desviarse para pasar.',
               counterText: '',
             ),
+            validator: (valor) => valor == null || valor.trim().isEmpty
+                ? 'Describe el problema para continuar.'
+                : null,
             onChanged: (valor) {
               reporte.descripcion = valor;
               alCambiar();
             },
           ),
           const SizedBox(height: 7),
-          Text('Describe qué ocurre y cómo afecta el paso.',
-              style: Theme.of(context).textTheme.bodySmall),
+          const Text('Describe qué ocurre y cómo afecta el paso.',
+              style: TextStyle(fontSize: 13, color: FixaColores.tinta2)),
           const SizedBox(height: 16),
           TarjetaFixa(
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(children: [
                   Icon(iconoDe(categoria.codigo),
-                      color: FixaColores.hojaOscura),
-                  const SizedBox(width: 8),
+                      color: FixaColores.hojaOscura, size: 24),
+                  const SizedBox(width: 10),
                   Expanded(
-                      child: Text(categoria.codigo.etiqueta,
-                          style: tituloFixa(16))),
+                    child: Text(categoria.codigo.etiqueta,
+                        style: tituloFixa(16)),
+                  ),
                 ]),
                 const SizedBox(height: 6),
-                Text(reporte.lugarVisible,
-                    style: Theme.of(context).textTheme.bodySmall),
-                const SizedBox(height: 6),
-                TextoConIcono(
-                    Icons.send_outlined, 'Unidad: ${categoria.unidadVisible}'),
+                Text(
+                  ubicacionVisible,
+                  style: const TextStyle(
+                      fontSize: 13, color: FixaColores.tinta2),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.near_me_outlined,
+                        size: 18, color: FixaColores.hojaOscura),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Unidad: ${categoria.unidadVisible}',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: FixaColores.hojaOscura,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
