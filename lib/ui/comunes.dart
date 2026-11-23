@@ -394,13 +394,14 @@ class FiltroFixa extends StatelessWidget {
         labelStyle: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w700,
-            color: activo ? FixaColores.hojaOscura : FixaColores.tinta2),
+            color: activo ? FixaColores.blanco : FixaColores.tinta),
         backgroundColor: FixaColores.blanco,
-        selectedColor: FixaColores.menta,
+        selectedColor: FixaColores.hojaOscura,
         side: BorderSide(
-            color: activo ? FixaColores.hojaOscura : FixaColores.linea),
+            color: activo ? FixaColores.hojaOscura : FixaColores.linea,
+            width: activo ? 1.5 : 1),
         shape: const StadiumBorder(),
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       );
 }
 

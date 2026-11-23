@@ -20,12 +20,14 @@ GoRouter crearRouter() => GoRouter(
             GoRoute(
               path: '/',
               builder: (_, __) => const InicioScreen(),
-              routes: [
-                GoRoute(path: 'mapa', builder: (_, __) => const MapaScreen()),
-                GoRoute(
-                    path: 'mis-reportes',
-                    builder: (_, __) => const MisReportesScreen()),
-              ],
+            ),
+            GoRoute(
+              path: '/mapa',
+              builder: (_, __) => const MapaScreen(),
+            ),
+            GoRoute(
+              path: '/mis-reportes',
+              builder: (_, __) => const MisReportesScreen(),
             ),
           ],
         ),
