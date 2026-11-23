@@ -1,8 +1,7 @@
 import groovy.json.JsonSlurper
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android Gradle plugin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -38,9 +37,11 @@ android {
         resValues = firebase.isNotEmpty()
     }
 
-    sourceSets.getByName("main").java.srcDir(
-        if (firebase.isEmpty()) "src/sinFcm/kotlin" else "src/fcm/kotlin"
-    )
+    sourceSets.getByName("main") {
+        val extraKotlin = if (firebase.isEmpty()) "src/sinFcm/kotlin" else "src/fcm/kotlin"
+        java.srcDir(extraKotlin)
+        kotlin.srcDir(extraKotlin)
+    }
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -64,12 +65,6 @@ android {
         release {
             signingConfig = signingConfigs.getByName("debug")
         }
-    }
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
     }
 }
 
