@@ -8,7 +8,6 @@ import '../../data/modelos.dart';
 import '../../data/repositorio.dart';
 import '../../ui/comunes.dart';
 
-/// Seguir un reporte con código y clave (R06), por ejemplo si se envió desde otro celular.
 class SeguirScreen extends StatefulWidget {
   const SeguirScreen({super.key});
 
@@ -17,7 +16,7 @@ class SeguirScreen extends StatefulWidget {
 }
 
 class _SeguirScreenState extends State<SeguirScreen> {
-  final _codigo = TextEditingController(text: 'FX-');
+  final _codigo = TextEditingController();
   final _clave = TextEditingController();
   bool _buscando = false;
   bool _verClave = false;
@@ -30,29 +29,40 @@ class _SeguirScreenState extends State<SeguirScreen> {
     super.dispose();
   }
 
-  bool get _completo => _codigo.text.trim().length > 4 && _clave.text.trim().length >= 6;
-
   Future<void> _buscar() async {
+    if (_buscando) return;
     FocusScope.of(context).unfocus();
-    final credenciales = Credenciales(
-      codigo: _codigo.text.trim().toUpperCase(),
-      clave: _clave.text.trim().toUpperCase(),
-      guardadoEl: DateTime.now(),
-    );
+    final codigo = _codigo.text.trim().toUpperCase();
+    final clave = _clave.text.trim().toUpperCase();
+    if (codigo.length <= 4 || clave.length < 6) {
+      setState(
+          () => _error = 'Ingresa el código y la clave de tu comprobante.');
+      return;
+    }
+    final credenciales =
+        Credenciales(codigo: codigo, clave: clave, guardadoEl: DateTime.now());
     setState(() {
       _buscando = true;
       _error = null;
     });
     final mis = context.read<MisReportes>();
     try {
-      final s = await mis.repositorio.seguimiento(credenciales);
-      await mis.guardar(Credenciales(
-          codigo: credenciales.codigo, clave: credenciales.clave, categoria: s.categoria, guardadoEl: DateTime.now()));
-      await mis.actualizarUno(credenciales);
-      if (mounted) context.pushReplacement('/reporte/${credenciales.codigo}');
-    } on FixaError catch (e) {
+      final seguimiento = await mis.repositorio.seguimiento(credenciales);
+      final datos = Credenciales(
+          codigo: codigo,
+          clave: clave,
+          categoria: seguimiento.categoria,
+          guardadoEl: DateTime.now());
+      await mis.guardarConsulta(datos, seguimiento);
       if (mounted) {
-        setState(() => _error = e.credencialesInvalidas ? 'El código o la clave no coinciden. Revisa que estén bien escritos.' : e.mensaje);
+        context.pushReplacement('/reporte/${Uri.encodeComponent(codigo)}',
+            extra: datos);
+      }
+    } on FixaError catch (error) {
+      if (mounted) {
+        setState(() => _error = error.credencialesInvalidas
+            ? 'El código o la clave no coinciden. Revisa que estén bien escritos.'
+            : error.mensaje);
       }
     } finally {
       if (mounted) setState(() => _buscando = false);
@@ -60,80 +70,91 @@ class _SeguirScreenState extends State<SeguirScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final etiqueta = Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, fontSize: 16);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Seguir un reporte')),
-      body: AutofillGroup(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 8, 24, 24),
-          children: [
-            Text('Escribe tu código y tu clave', style: tituloFixa(30)),
-            const SizedBox(height: 8),
-            Text('Solo los necesitas si cambiaste de celular o reportaste desde otro.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: FixaColores.tinta2)),
-            const SizedBox(height: 20),
-            Text('Código', style: etiqueta),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _codigo,
-              textCapitalization: TextCapitalization.characters,
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: 1),
-              decoration: const InputDecoration(prefixIcon: Icon(Icons.tag), hintText: 'FX-2026-000418'),
-              onChanged: (_) => setState(() {}),
-            ),
-            const SizedBox(height: 16),
-            Text('Clave', style: etiqueta),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _clave,
-              obscureText: !_verClave,
-              textCapitalization: TextCapitalization.characters,
-              autofillHints: const [AutofillHints.password],
-              style: const TextStyle(fontSize: 19, fontWeight: FontWeight.w700, letterSpacing: 1),
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.lock_outline),
-                hintText: '7K2-9QD',
-                suffixIcon: IconButton(
-                  tooltip: _verClave ? 'Ocultar la clave' : 'Mostrar la clave',
-                  onPressed: () => setState(() => _verClave = !_verClave),
-                  icon: Icon(_verClave ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                ),
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(title: const Text('Seguir un reporte')),
+        body: AutofillGroup(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(15, 12, 15, 24),
+            children: [
+              Text('Consulta con tu\ncódigo y clave', style: tituloFixa(28)),
+              const SizedBox(height: 22),
+              const Text(
+                  'Los encontrarás en el comprobante que recibiste al enviar tu reporte.',
+                  style: TextStyle(color: FixaColores.tinta2)),
+              const SizedBox(height: 24),
+              Text('Código único', style: tituloFixa(16)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _codigo,
+                readOnly: _buscando,
+                textCapitalization: TextCapitalization.characters,
+                textInputAction: TextInputAction.next,
+                decoration:
+                    const InputDecoration(hintText: 'Código de tu comprobante'),
               ),
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (_) => _completo ? _buscar() : null,
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 14),
-              Aviso(texto: _error!, tipo: TipoAviso.error),
-            ],
-            const SizedBox(height: 16),
-            Material(
-              color: FixaColores.menta,
-              borderRadius: BorderRadius.circular(16),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () => context.pushReplacement('/mis-reportes'),
-                child: const Padding(
-                  padding: EdgeInsets.all(14),
-                  child: Row(children: [
-                    Icon(Icons.smartphone, color: FixaColores.hojaOscura),
-                    SizedBox(width: 12),
+              const SizedBox(height: 10),
+              Text('Clave privada', style: tituloFixa(16)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _clave,
+                readOnly: _buscando,
+                obscureText: !_verClave,
+                textCapitalization: TextCapitalization.characters,
+                autocorrect: false,
+                enableSuggestions: false,
+                decoration: InputDecoration(
+                  hintText: 'Clave de tu comprobante',
+                  suffixIcon: IconButton(
+                    tooltip:
+                        _verClave ? 'Ocultar la clave' : 'Mostrar la clave',
+                    onPressed: () => setState(() => _verClave = !_verClave),
+                    icon: Icon(_verClave
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                  ),
+                ),
+                onSubmitted: (_) => _buscar(),
+              ),
+              if (_error case final error?) ...[
+                const SizedBox(height: 10),
+                Aviso(texto: error, tipo: TipoAviso.error),
+              ],
+              const SizedBox(height: 24),
+              BotonPrincipal(
+                  texto: 'Ver seguimiento',
+                  icono: Icons.search,
+                  cargando: _buscando,
+                  onPressed: _buscar),
+              const SizedBox(height: 22),
+              TarjetaFixa(
+                onTap: () => context.go('/mis-reportes'),
+                child: Row(
+                  children: [
+                    const Icon(Icons.format_list_bulleted,
+                        color: FixaColores.hojaOscura),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: Text('¿Lo enviaste desde este celular? Ya está en Mis reportes.',
-                          style: TextStyle(fontWeight: FontWeight.w700, color: FixaColores.hojaOscura)),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('¿Lo enviaste desde este celular?',
+                              style: tituloFixa(14)),
+                          const SizedBox(height: 4),
+                          Text('Búscalo en Mis reportes.',
+                              style: Theme.of(context).textTheme.bodySmall),
+                        ],
+                      ),
                     ),
-                    Icon(Icons.chevron_right, color: FixaColores.hojaOscura),
-                  ]),
+                    const Icon(Icons.chevron_right,
+                        color: FixaColores.hojaOscura),
+                  ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              const TextoConIcono(Icons.verified_user_outlined,
+                  'Tu clave es privada. No la compartas.'),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: BarraAccion(
-        child: BotonPrincipal(texto: 'Ver mi reporte', cargando: _buscando, onPressed: _completo ? _buscar : null),
-      ),
-    );
-  }
+      );
 }

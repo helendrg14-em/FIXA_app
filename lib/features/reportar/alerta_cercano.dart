@@ -4,61 +4,87 @@ import '../../core/tema.dart';
 import '../../data/modelos.dart';
 import '../../ui/comunes.dart';
 
-/// "¿Es este tu reporte?" (R13/R14): si ya hay un caso igual cerca, el vecino puede apoyarlo
-/// en lugar de duplicarlo. Devuelve true (apoyar), false (es otro) o null (cerró la hoja).
-Future<bool?> mostrarAlertaCercano(BuildContext context, CasoCercano caso, CodigoCategoria categoria) {
+Future<bool?> mostrarAlertaCercano(
+    BuildContext context, CasoCercano caso, Categoria categoria) {
   return showModalBottomSheet<bool>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
     backgroundColor: FixaColores.blanco,
     builder: (contexto) => SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      top: false,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 22),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Text('¿Es este tu reporte?', style: tituloFixa(28)),
-            const SizedBox(height: 6),
-            const Text('Si es el mismo problema, apóyalo para evitar duplicados. Recibirás tu propio código y clave.',
-                style: TextStyle(color: FixaColores.tinta2, fontSize: 16)),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: FixaColores.menta, borderRadius: BorderRadius.circular(18)),
+            Row(
+              children: [
+                const Expanded(
+                  child: Text('Reporte cercano',
+                      style: TextStyle(
+                          color: FixaColores.hojaOscura,
+                          fontWeight: FontWeight.w700)),
+                ),
+                IconButton(
+                    tooltip: 'Cerrar',
+                    onPressed: () => Navigator.pop(contexto),
+                    icon: const Icon(Icons.close)),
+              ],
+            ),
+            const SizedBox(height: 5),
+            Text('¿Es el mismo problema?', style: tituloFixa(24)),
+            const SizedBox(height: 7),
+            Text(
+              'Ya hay un reporte abierto a ${caso.distanciaMetros} m. Puedes apoyarlo para evitar duplicarlo.',
+              style: const TextStyle(color: FixaColores.tinta2),
+            ),
+            const SizedBox(height: 12),
+            TarjetaFixa(
+              fondo: FixaColores.papel,
               child: Row(
                 children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(color: FixaColores.bosque, borderRadius: BorderRadius.circular(14)),
-                    child: Icon(iconoDe(categoria), color: FixaColores.lima),
-                  ),
-                  const SizedBox(width: 14),
+                  IconoFixa(iconoDe(categoria.codigo), tamano: 46),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(caso.tipo.isEmpty ? categoria.etiqueta : caso.tipo, style: tituloFixa(19, color: FixaColores.tinta)),
-                        Text('${caso.distanciaMetros < 10 ? 'Aquí mismo' : 'A ${caso.distanciaMetros} m'} · ${caso.estado}',
-                            style: const TextStyle(fontWeight: FontWeight.w700, color: FixaColores.hojaOscura)),
-                        Text(
-                          caso.vecinosQueReportaron == 1
-                              ? 'Lo reportó 1 vecino'
-                              : 'Lo reportaron ${caso.vecinosQueReportaron} vecinos',
-                          style: const TextStyle(color: FixaColores.tinta2, fontSize: 14),
-                        ),
+                        Text(categoria.codigo.etiqueta, style: tituloFixa(17)),
+                        if (caso.tipo.isNotEmpty)
+                          Text(caso.tipo,
+                              style: Theme.of(context).textTheme.bodySmall),
+                        const SizedBox(height: 6),
+                        EstadoFixa(EstadoCaso(caso.estado)),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            BotonPrincipal(texto: 'Sí, apoyar ese reporte', icono: Icons.group_add_outlined, onPressed: () => Navigator.pop(contexto, true)),
-            const SizedBox(height: 10),
-            OutlinedButton(onPressed: () => Navigator.pop(contexto, false), child: const Text('No, es otro problema')),
+            const SizedBox(height: 8),
+            Text(categoria.unidadVisible,
+                style: Theme.of(context).textTheme.bodySmall),
+            if (caso.desde case final desde?)
+              Text('Registrado: ${fecha(desde)}',
+                  style: Theme.of(context).textTheme.bodySmall),
+            Text(
+              caso.vecinosQueReportaron == 1
+                  ? 'Lo reportó 1 vecino'
+                  : 'Lo reportaron ${caso.vecinosQueReportaron} vecinos',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            BotonPrincipal(
+              texto: 'Sí, apoyar reporte',
+              icono: Icons.add,
+              onPressed: () => Navigator.pop(contexto, true),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+                onPressed: () => Navigator.pop(contexto, false),
+                child: const Text('No, crear otro reporte')),
           ],
         ),
       ),

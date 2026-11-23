@@ -20,7 +20,7 @@ solo con las rutas públicas `/api/v1/publico`.
 
 | Programa | Para qué | Cómo comprobarlo |
 |---|---|---|
-| [Flutter **3.47.7**](https://docs.flutter.dev/install) | Compilar la app (la misma versión que el CI) | `flutter --version` |
+| [Flutter **3.50.1**](https://docs.flutter.dev/install) | Compilar la app (la misma versión que el CI) | `flutter --version` |
 | [Android Studio](https://developer.android.com/studio) | El SDK de Android y el emulador | `flutter doctor` sin errores en Android |
 | Un emulador o un celular Android con depuración USB | Ejecutar la app | `flutter devices` |
 
@@ -63,6 +63,12 @@ flutter run --dart-define=FIXA_MOCK=true
 | "No hay conexión con FIXA" | La API está despertando o no está levantada | Espera un minuto, o revisa que tu API local responda en `/salud` |
 | La cámara o el GPS no funcionan en el emulador | El emulador no tiene cámara ni ubicación real | En el emulador, **⋯ → Location** para fijar una ubicación; la cámara usa una escena virtual |
 
+## Mapas, fotos y notificaciones
+
+- El mapa toma los casos públicos de FIXA y muestra sus ubicaciones aproximadas sobre OpenStreetMap. La búsqueda consulta Nominatim al pulsar Buscar. Para usar otros servidores compatibles, configura los valores `FIXA_OSM_TILES` y `FIXA_OSM_GEOCODER` con `--dart-define`.
+- Las fotos se comprimen a WebP antes de enviarlas a la API de FIXA. La API las sube a Cloudinary con su propia configuración. Los casos cercanos muestran la distancia, el tipo y el estado que devuelve la consulta pública.
+- Para activar FCM en Android, registra `com.fixa.fixa` en el mismo proyecto Firebase que utiliza la API y coloca `google-services.json` en `android/app/` antes de compilar. La app solicita permiso al enviar un reporte o al activar avisos desde el seguimiento. Si Firebase no está configurado, los demás flujos siguen disponibles.
+- El comprobante se puede copiar, guardar como PNG con el selector de archivos de Android o abrir como borrador en el cliente de correo.
 ## Pruebas
 
 ```bash
@@ -86,3 +92,4 @@ flutter build apk --release
 ```
 
 El archivo se sube como `fixa.apk` a GitHub Releases; el portal enlaza siempre a la última versión.
+

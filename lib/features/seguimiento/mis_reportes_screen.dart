@@ -6,9 +6,25 @@ import '../../core/tema.dart';
 import '../../data/mis_reportes.dart';
 import '../../data/modelos.dart';
 import '../../ui/comunes.dart';
-import 'conformidad.dart';
 
-/// Reportes guardados en este celular, con su estado actual (R06) y la conformidad (R12).
+enum _Filtro {
+  todos('Todos'),
+  curso('En curso'),
+  cerrados('Cerrados');
+
+  const _Filtro(this.etiqueta);
+  final String etiqueta;
+
+  bool incluye(Seguimiento? seguimiento) => switch (this) {
+        todos => true,
+        curso => const {Etapa.recibido, Etapa.enRevision, Etapa.programado}
+            .contains(seguimiento?.estado.etapa),
+        cerrados => seguimiento != null &&
+            (seguimiento.estado.cerrado ||
+                seguimiento.estado.terminoSinArreglo),
+      };
+}
+
 class MisReportesScreen extends StatefulWidget {
   const MisReportesScreen({super.key});
 
@@ -17,106 +33,159 @@ class MisReportesScreen extends StatefulWidget {
 }
 
 class _MisReportesScreenState extends State<MisReportesScreen> {
+  _Filtro _filtro = _Filtro.todos;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final mis = context.read<MisReportes>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _cargar();
+    });
+  }
+
+  Future<void> _cargar() async {
+    final mis = context.read<MisReportes>();
+    try {
       if (!mis.cargado) await mis.cargar();
       await mis.actualizar();
-    });
+    } on Exception {
+      if (mounted) {
+        mostrarMensaje(
+            context, 'No se pudieron cargar tus reportes en este celular.');
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final mis = context.watch<MisReportes>();
+    final visibles = mis.guardados
+        .where((c) => _filtro.incluye(mis.estadoDe(c.codigo)))
+        .toList();
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis reportes')),
+      appBar: AppBar(
+          title: const Text('Mis reportes'), automaticallyImplyLeading: false),
       body: RefreshIndicator(
-        onRefresh: mis.actualizar,
-        child: mis.guardados.isEmpty
-            ? ListView(
-                padding: const EdgeInsets.fromLTRB(32, 80, 32, 32),
-                children: [
-                  const Icon(Icons.campaign_outlined, size: 56, color: FixaColores.hojaOscura),
-                  const SizedBox(height: 16),
-                  Text('Aún no tienes reportes en este celular', textAlign: TextAlign.center, style: tituloFixa(22)),
-                  const SizedBox(height: 8),
-                  const Text('Cuando envíes uno, aquí verás en qué etapa está. Si lo enviaste desde otro celular, '
-                      'búscalo con tu código y clave.',
-                      textAlign: TextAlign.center, style: TextStyle(color: FixaColores.tinta2)),
-                  const SizedBox(height: 20),
-                  OutlinedButton(onPressed: () => context.push('/seguir'), child: const Text('Seguir con código y clave')),
-                ],
+        onRefresh: _cargar,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 9, 16, 24),
+          children: [
+            Text('Reportes guardados en este celular',
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 14),
+            OutlinedButton.icon(
+              icon: const Icon(Icons.search),
+              label: const Text('Seguir con código'),
+              onPressed: () => context.push('/seguir'),
+            ),
+            const SizedBox(height: 7),
+            Wrap(
+              spacing: 8,
+              children: [
+                for (final filtro in _Filtro.values)
+                  FiltroFixa(
+                      texto: filtro.etiqueta,
+                      activo: _filtro == filtro,
+                      onTap: () => setState(() => _filtro = filtro)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (!mis.cargado)
+              const LinearProgressIndicator()
+            else if (visibles.isEmpty)
+              TarjetaFixa(
+                child: Text(
+                  mis.guardados.isEmpty
+                      ? 'Aquí aparecerán los reportes que guardes en este celular.'
+                      : 'No hay reportes para este filtro.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               )
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-                itemCount: mis.guardados.length,
-                separatorBuilder: (_, _) => const SizedBox(height: 14),
-                itemBuilder: (_, i) => _Tarjeta(credenciales: mis.guardados[i]),
-              ),
+            else
+              for (final credenciales in visibles)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _Tarjeta(
+                    credenciales: credenciales,
+                    seguimiento: mis.estadoDe(credenciales.codigo),
+                    error: mis.errorDe(credenciales.codigo),
+                  ),
+                ),
+          ],
+        ),
       ),
     );
   }
 }
 
 class _Tarjeta extends StatelessWidget {
-  const _Tarjeta({required this.credenciales});
+  const _Tarjeta({required this.credenciales, this.seguimiento, this.error});
   final Credenciales credenciales;
+  final Seguimiento? seguimiento;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
-    final mis = context.watch<MisReportes>();
-    final estado = mis.estadoDe(credenciales.codigo);
-    final error = mis.errorDe(credenciales.codigo);
-    final categoria = estado?.categoria ?? credenciales.categoria ?? 'Reporte';
-
-    return Material(
-      color: FixaColores.blanco,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20), side: const BorderSide(color: FixaColores.linea)),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => context.push('/reporte/${credenciales.codigo}'),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    final detalle = seguimiento;
+    final categoriaApi = detalle?.categoria ?? credenciales.categoria ?? '';
+    final categoria = categoriaPorNombre(categoriaApi);
+    final titulo = categoria?.etiqueta ??
+        (categoriaApi.isEmpty ? 'Reporte' : categoriaApi);
+    final ultimoCambio = detalle?.ultimaActualizacion ??
+        detalle?.fechaCierre ??
+        detalle?.fechaRegistro;
+    final nota = Theme.of(context).textTheme.bodySmall;
+    return TarjetaFixa(
+      sombra: true,
+      onTap: () =>
+          context.push('/reporte/${Uri.encodeComponent(credenciales.codigo)}'),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(color: FixaColores.menta, borderRadius: BorderRadius.circular(14)),
-                    child: Icon(iconoDe(categoriaPorNombre(categoria)), color: FixaColores.hojaOscura),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(categoria, style: tituloFixa(18, color: FixaColores.tinta)),
-                        Text('Código · ${credenciales.codigo}', style: const TextStyle(color: FixaColores.tinta2, fontSize: 14)),
-                      ],
-                    ),
-                  ),
-                  const Icon(Icons.chevron_right, color: FixaColores.tinta2),
-                ],
-              ),
-              const SizedBox(height: 14),
-              if (estado != null)
-                AvanceEtapas(estado: estado.estado)
-              else if (error != null)
-                Aviso(texto: error, tipo: TipoAviso.error)
-              else
-                const LinearProgressIndicator(),
-              if (estado != null && estado.puedeResponderCierre(DateTime.now()) && estado.conformidad == null) ...[
-                const SizedBox(height: 14),
-                BloqueConformidad(credenciales: credenciales, seguimiento: estado),
-              ],
+              Icon(iconoDe(categoria), color: FixaColores.hojaOscura, size: 23),
+              const SizedBox(width: 8),
+              Expanded(child: Text(titulo, style: tituloFixa(17))),
+              const Icon(Icons.chevron_right, color: FixaColores.tinta2),
             ],
           ),
-        ),
+          const SizedBox(height: 4),
+          Text(credenciales.codigo, style: nota),
+          const SizedBox(height: 5),
+          if (detalle != null) ...[
+            EstadoFixa(detalle.estado),
+            if (detalle.unidad case final unidad? when unidad.isNotEmpty) ...[
+              const SizedBox(height: 5),
+              Text(unidad, style: tituloFixa(13)),
+            ],
+            if (ultimoCambio != null) ...[
+              const SizedBox(height: 5),
+              Text(
+                  'Actualizado: ${fechaCorta(ultimoCambio, incluirHora: true)}',
+                  style: nota),
+            ],
+            if (detalle.estado.etapa case final etapa?) ...[
+              const SizedBox(height: 5),
+              BarrasFixa(
+                  actual: etapa.index + 1,
+                  total: Etapa.values.length,
+                  color: EstadoFixa.colorDe(detalle.estado)),
+              const SizedBox(height: 5),
+              if (detalle.revisionDisponibleHasta case final limite?
+                  when detalle.puedeResponderCierre(DateTime.now()) &&
+                      detalle.conformidad == null)
+                Text('Revisa el cierre hasta el ${fechaCorta(limite)}.',
+                    style: nota?.copyWith(color: FixaColores.hojaOscura))
+              else
+                Text('Recibido · Revisión · Atención · Cierre', style: nota),
+            ],
+          ] else if (error != null)
+            Text(error!, style: nota?.copyWith(color: FixaColores.error))
+          else
+            const LinearProgressIndicator(minHeight: 3),
+        ],
       ),
     );
   }
