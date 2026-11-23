@@ -37,8 +37,9 @@ class _DetalleScreenState extends State<DetalleScreen> {
         return;
       }
       await repositorio.actualizarDispositivo(credenciales, token);
-      if (mounted)
+      if (mounted) {
         mostrarMensaje(context, 'Avisos activados para este reporte.');
+      }
     } on FixaError catch (error) {
       if (mounted) mostrarMensaje(context, error.mensaje);
     } finally {

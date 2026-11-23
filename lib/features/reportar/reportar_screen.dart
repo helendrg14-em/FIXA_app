@@ -112,10 +112,7 @@ class _ReportarScreenState extends State<ReportarScreen> {
       1 => (
           PasoCategoria(reporte: _reporte, alCambiar: () => setState(() {})),
           () => setState(() => _paso = 2),
-          _reporte.tipo != null &&
-              (_reporte.categoria != CodigoCategoria.alumbrado ||
-                  _reporte.tipo!.esOtro ||
-                  _reporte.numeroLuminarias != null),
+          _reporte.categoria != null,
         ),
       2 => (
           PasoFotoLugar(

@@ -31,11 +31,41 @@ class _PasoFotoLugarState extends State<PasoFotoLugar> {
   final _selector = ImagePicker();
   bool _procesandoFoto = false;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.reporte.latitud == null || widget.reporte.longitud == null) {
+      _inicializarUbicacion();
+    }
+  }
+
+  Future<void> _inicializarUbicacion() async {
+    try {
+      final punto = await miUbicacion();
+      if (!mounted) return;
+      widget.reporte
+        ..latitud = punto.latitude
+        ..longitud = punto.longitude;
+      widget.alCambiar();
+    } catch (_) {
+      if (!mounted) return;
+      widget.reporte
+        ..latitud = centroFixa.latitude
+        ..longitud = centroFixa.longitude;
+      widget.alCambiar();
+    }
+  }
+
   Future<void> _tomarFoto() async {
     if (_procesandoFoto) return;
     setState(() => _procesandoFoto = true);
     try {
-      final foto = await _selector.pickImage(source: ImageSource.camera);
+      XFile? foto;
+      try {
+        foto = await _selector.pickImage(source: ImageSource.camera);
+      } catch (_) {
+        foto = await _selector.pickImage(source: ImageSource.gallery);
+      }
       if (foto == null || !mounted) return;
       for (final calidad in [80, 65, 50]) {
         final webp = await FlutterImageCompress.compressWithFile(
@@ -102,99 +132,131 @@ class _PasoFotoLugarState extends State<PasoFotoLugar> {
         Text('Foto y lugar', style: tituloFixa(23)),
         const SizedBox(height: 16),
         TarjetaFixa(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text('Foto del problema', style: tituloFixa(17)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               ClipRRect(
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(12),
                 child: AspectRatio(
-                  aspectRatio: 2.45,
+                  aspectRatio: 2.3,
                   child: _procesandoFoto
                       ? const Center(child: CircularProgressIndicator())
                       : reporte.foto == null
-                          ? const ColoredBox(
-                              color: FixaColores.menta,
-                              child: Center(
-                                  child: Icon(Icons.photo_camera_outlined,
-                                      color: FixaColores.hojaOscura, size: 35)),
+                          ? Container(
+                              color: FixaColores.papel,
+                              child: const Center(
+                                child: Icon(Icons.photo_camera_outlined,
+                                    color: FixaColores.hojaOscura, size: 40),
+                              ),
                             )
                           : Image.memory(reporte.foto!,
                               fit: BoxFit.cover,
                               semanticLabel: 'Foto del problema'),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed:
                     _procesandoFoto || widget.bloqueado ? null : _tomarFoto,
-                icon: const Icon(Icons.photo_camera_outlined),
-                label:
-                    Text(reporte.foto == null ? 'Tomar foto' : 'Cambiar foto'),
+                icon: const Icon(Icons.photo_camera_outlined,
+                    color: FixaColores.hojaOscura),
+                label: Text(
+                  reporte.foto == null ? 'Tomar foto' : 'Cambiar foto',
+                  style: const TextStyle(
+                      color: FixaColores.hojaOscura,
+                      fontWeight: FontWeight.w700),
+                ),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: FixaColores.linea),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
               ),
-              const SizedBox(height: 6),
-              Text('Evita incluir rostros o placas.',
-                  style: Theme.of(context).textTheme.bodySmall),
+              const SizedBox(height: 8),
+              const Text('Evita incluir rostros o placas.',
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: FixaColores.tinta2)),
             ],
           ),
         ),
         const SizedBox(height: 15),
         TarjetaFixa(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(14),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Ubicación', style: tituloFixa(17)),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               ClipRRect(
-                borderRadius: BorderRadius.circular(11),
+                borderRadius: BorderRadius.circular(12),
                 child: AspectRatio(
                   aspectRatio: 2.1,
-                  child: MapaOsm(
-                    key: ValueKey(punto),
-                    centro: punto ?? centroFixa,
-                    zoom: punto == null ? 14.5 : 16.5,
-                    interactivo: false,
-                    marcadores: [if (punto != null) _marcador(punto)],
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      MapaOsm(
+                        key: ValueKey(punto),
+                        centro: punto ?? centroFixa,
+                        zoom: 16.5,
+                        interactivo: false,
+                      ),
+                      const Center(child: _PinLugar()),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   const Icon(Icons.map_outlined,
-                      color: FixaColores.hojaOscura, size: 20),
-                  const SizedBox(width: 8),
+                      color: FixaColores.hojaOscura, size: 24),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                            reporte.direccion?.titulo ??
-                                (punto == null
-                                    ? 'Selecciona el lugar'
-                                    : 'Punto en el mapa'),
-                            style: tituloFixa(14)),
-                        if (punto != null)
-                          Text(
-                            reporte.direccion?.detalle ?? reporte.lugarVisible,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
+                          reporte.direccion?.titulo ?? 'Av. Cañoto',
+                          style: tituloFixa(15),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          reporte.direccion?.detalle ??
+                              (reporte.lugarVisible.isNotEmpty &&
+                                      reporte.lugarVisible != 'Sin ubicación'
+                                  ? reporte.lugarVisible
+                                  : 'Distrito 11 · Centro'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 13, color: FixaColores.tinta2),
+                        ),
                       ],
                     ),
                   ),
-                  TextButton(
-                    onPressed: widget.bloqueado ? null : _editar,
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('Editar'),
-                        Icon(Icons.chevron_right, size: 19)
-                      ],
+                  InkWell(
+                    onTap: widget.bloqueado ? null : _editar,
+                    borderRadius: BorderRadius.circular(8),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Editar',
+                              style: TextStyle(
+                                  color: FixaColores.hojaOscura,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14)),
+                          SizedBox(width: 2),
+                          Icon(Icons.chevron_right,
+                              size: 18, color: FixaColores.hojaOscura),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -207,27 +269,27 @@ class _PasoFotoLugarState extends State<PasoFotoLugar> {
   }
 }
 
-Marker _marcador(LatLng punto) => Marker(
-      point: punto,
-      width: 46,
-      height: 46,
-      child: const _PinLugar(),
-    );
-
 class _PinLugar extends StatelessWidget {
   const _PinLugar();
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 44,
-        height: 44,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           color: FixaColores.hojaOscura,
           shape: BoxShape.circle,
-          border: Border.all(color: FixaColores.blanco, width: 3),
+          border: Border.all(color: FixaColores.blanco, width: 2.5),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 4,
+              offset: Offset(0, 2),
+            )
+          ],
         ),
-        child: const Icon(Icons.location_on_outlined,
-            color: FixaColores.blanco, size: 23),
+        child: const Icon(Icons.location_on,
+            color: FixaColores.blanco, size: 20),
       );
 }
 
