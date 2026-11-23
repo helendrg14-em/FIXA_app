@@ -28,7 +28,8 @@ class MockRepositorio implements Repositorio {
     ],
     CodigoCategoria.residuos: [
       TipoIncidencia('basura_en_calle', 'Basura en la calle'),
-      TipoIncidencia('basura_en_espacio_publico', 'Basura en un espacio público'),
+      TipoIncidencia(
+          'basura_en_espacio_publico', 'Basura en un espacio público'),
       TipoIncidencia('otro', 'Otro'),
     ],
   };
@@ -40,7 +41,10 @@ class MockRepositorio implements Repositorio {
     await _espera();
     return [
       for (final c in CodigoCategoria.values)
-        Categoria(codigo: c, nombre: c.etiqueta, descripcion: 'Lo arregla ${_unidades[c]}.'),
+        Categoria(
+            codigo: c,
+            nombre: c.etiqueta,
+            descripcion: 'Lo arregla ${_unidades[c]}.'),
     ];
   }
 
@@ -51,17 +55,26 @@ class MockRepositorio implements Repositorio {
   }
 
   @override
-  Future<List<CasoCercano>> cercanos(CodigoCategoria categoria, double latitud, double longitud) async {
+  Future<List<CasoCercano>> cercanos(
+      CodigoCategoria categoria, double latitud, double longitud) async {
     await _espera();
     if (categoria != CodigoCategoria.bache) return [];
-    return const [CasoCercano(casoId: 12, estado: 'En revisión', tipo: 'Bache', distanciaMetros: 40, vecinosQueReportaron: 2)];
+    return const [
+      CasoCercano(
+          casoId: 12,
+          estado: 'En revisión',
+          tipo: 'Bache',
+          distanciaMetros: 40,
+          vecinosQueReportaron: 2)
+    ];
   }
 
   Credenciales _nuevas(CodigoCategoria categoria) {
     _correlativo++;
     const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final azar = Random();
-    final clave = List.generate(7, (_) => letras[azar.nextInt(letras.length)]).join();
+    final clave =
+        List.generate(7, (_) => letras[azar.nextInt(letras.length)]).join();
     return Credenciales(
       codigo: 'FX-2026-${_correlativo.toString().padLeft(6, '0')}',
       clave: '${clave.substring(0, 3)}-${clave.substring(3)}',
@@ -85,20 +98,30 @@ class MockRepositorio implements Repositorio {
         fechaRegistro: DateTime.now(),
       ),
     );
-    return ReporteCreado(credenciales: credenciales, unidad: _unidades[categoria]!);
+    return ReporteCreado(
+        credenciales: credenciales, unidad: _unidades[categoria]!);
   }
 
   @override
   Future<ReporteCreado> apoyar(int casoId, NuevoReporte reporte) async {
     final creado = await reportar(reporte);
-    return ReporteCreado(credenciales: creado.credenciales, unidad: creado.unidad, esApoyo: true);
+    return ReporteCreado(
+        credenciales: creado.credenciales,
+        unidad: creado.unidad,
+        esApoyo: true);
   }
+
+  @override
+  Future<void> actualizarDispositivo(
+      Credenciales credenciales, String token) async {}
 
   @override
   Future<Seguimiento> seguimiento(Credenciales credenciales) async {
     await _espera();
     final guardado = _reportes[credenciales.codigo];
-    if (guardado != null && guardado.$1.clave == credenciales.clave) return guardado.$2;
+    if (guardado != null && guardado.$1.clave == credenciales.clave) {
+      return guardado.$2;
+    }
     if (credenciales.codigo == 'FX-2026-000391') {
       final cierre = DateTime.now().subtract(const Duration(days: 3));
       return Seguimiento(
@@ -111,13 +134,17 @@ class MockRepositorio implements Repositorio {
         revisionDisponibleHasta: cierre.add(const Duration(days: 15)),
       );
     }
-    throw const FixaError('El código o la clave no coinciden.', estadoHttp: 401);
+    throw const FixaError('El código o la clave no coinciden.',
+        estadoHttp: 401);
   }
 
   @override
-  Future<String> conformidad(Credenciales credenciales, {required bool conforme}) async {
+  Future<String> conformidad(Credenciales credenciales,
+      {required bool conforme}) async {
     await _espera();
-    return conforme ? 'Gracias por confirmar la solución.' : 'Registramos que no estás conforme.';
+    return conforme
+        ? 'Gracias por confirmar la solución.'
+        : 'Registramos que no estás conforme.';
   }
 
   @override
@@ -130,11 +157,30 @@ class MockRepositorio implements Repositorio {
   Future<List<PuntoMapa>> mapa({CodigoCategoria? categoria}) async {
     await _espera();
     const puntos = [
-      PuntoMapa(latitud: -17.779, longitud: -63.183, categoria: CodigoCategoria.bache, estado: 'En revisión'),
-      PuntoMapa(latitud: -17.788, longitud: -63.176, categoria: CodigoCategoria.alumbrado, estado: 'Programada'),
-      PuntoMapa(latitud: -17.776, longitud: -63.190, categoria: CodigoCategoria.residuos, estado: 'Recibida'),
-      PuntoMapa(latitud: -17.772, longitud: -63.172, categoria: CodigoCategoria.bache, estado: 'Recibida'),
+      PuntoMapa(
+          latitud: -17.779,
+          longitud: -63.183,
+          categoria: CodigoCategoria.bache,
+          estado: 'En revisión'),
+      PuntoMapa(
+          latitud: -17.788,
+          longitud: -63.176,
+          categoria: CodigoCategoria.alumbrado,
+          estado: 'Programada'),
+      PuntoMapa(
+          latitud: -17.776,
+          longitud: -63.190,
+          categoria: CodigoCategoria.residuos,
+          estado: 'Recibida'),
+      PuntoMapa(
+          latitud: -17.772,
+          longitud: -63.172,
+          categoria: CodigoCategoria.bache,
+          estado: 'Recibida'),
     ];
-    return [for (final p in puntos) if (categoria == null || p.categoria == categoria) p];
+    return [
+      for (final p in puntos)
+        if (categoria == null || p.categoria == categoria) p
+    ];
   }
 }

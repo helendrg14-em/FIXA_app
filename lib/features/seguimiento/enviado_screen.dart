@@ -1,130 +1,291 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:share_plus/share_plus.dart';
+import 'package:provider/provider.dart';
 
 import '../../core/tema.dart';
+import '../../data/mis_reportes.dart';
 import '../../data/modelos.dart';
 import '../../ui/comunes.dart';
+import 'comprobante.dart';
 
-/// Reporte enviado: código y clave (R05). Si el vecino lo permitió, ya quedaron en este celular.
-class EnviadoScreen extends StatelessWidget {
-  const EnviadoScreen({super.key, required this.creado, required this.guardado});
+class EnviadoScreen extends StatefulWidget {
+  const EnviadoScreen(
+      {super.key, required this.creado, required this.guardado});
+
   final ReporteCreado creado;
   final bool guardado;
 
   @override
+  State<EnviadoScreen> createState() => _EnviadoScreenState();
+}
+
+class _EnviadoScreenState extends State<EnviadoScreen> {
+  final _comprobante = Comprobante();
+  bool _exportando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<MisReportes>().actualizarUno(widget.creado.credenciales);
+    });
+  }
+
+  Future<void> _exportar(ReporteCreado reporte, {required bool imagen}) async {
+    if (_exportando) return;
+    setState(() => _exportando = true);
+    try {
+      if (imagen) {
+        final guardado = await _comprobante.guardarImagen(reporte);
+        if (mounted && guardado) {
+          mostrarMensaje(context, 'Comprobante guardado.');
+        }
+      } else {
+        await _comprobante.abrirCorreo(reporte);
+      }
+    } on PlatformException catch (error) {
+      if (mounted) {
+        mostrarMensaje(
+            context, error.message ?? 'No se pudo exportar el comprobante.');
+      }
+    } on MissingPluginException {
+      if (mounted) {
+        mostrarMensaje(context, 'Esta opción está disponible en Android.');
+      }
+    } on StateError {
+      if (mounted) {
+        mostrarMensaje(context, 'No se pudo generar el comprobante.');
+      }
+    } finally {
+      if (mounted) setState(() => _exportando = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final c = creado.credenciales;
-    final unidad = creado.unidad.isEmpty ? 'La unidad responsable' : creado.unidad;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (salio, _) {
-        if (!salio) context.go('/');
-      },
-      child: Scaffold(
-        body: SafeArea(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-            children: [
-              Center(
-                child: Container(
-                  width: 76,
-                  height: 76,
-                  decoration: const BoxDecoration(color: FixaColores.hojaOscura, shape: BoxShape.circle),
-                  child: const Icon(Icons.check, color: FixaColores.lima, size: 40),
+    final seguimiento = context.select(
+        (MisReportes mis) => mis.estadoDe(widget.creado.credenciales.codigo));
+    final reporte = ReporteCreado(
+      credenciales: widget.creado.credenciales,
+      unidad: seguimiento?.unidad ?? widget.creado.unidad,
+      esApoyo: widget.creado.esApoyo,
+    );
+    final estado = seguimiento?.estado ??
+        (reporte.esApoyo ? null : const EstadoCaso('Recibida'));
+    final credenciales = reporte.credenciales;
+    final categoria = categoriaPorNombre(credenciales.categoria ?? '');
+    return Scaffold(
+      body: SafeArea(
+        bottom: false,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(13, 14, 13, 22),
+          children: [
+            Row(
+              children: [
+                const CircleAvatar(
+                  radius: 20,
+                  backgroundColor: FixaColores.hojaOscura,
+                  foregroundColor: FixaColores.blanco,
+                  child: Icon(Icons.check),
                 ),
-              ),
-              const SizedBox(height: 18),
-              Text(creado.esApoyo ? '¡Gracias por apoyar!' : '¡Reporte enviado!',
-                  textAlign: TextAlign.center, style: tituloFixa(34)),
-              const SizedBox(height: 8),
-              Text(
-                creado.esApoyo
-                    ? 'Tu apoyo se sumó al caso que ya estaba abierto.'
-                    : '$unidad ya lo recibió. Su avance aparece en Mis reportes.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: FixaColores.tinta2),
-              ),
-              const SizedBox(height: 22),
-              Container(
-                decoration: BoxDecoration(
-                  color: FixaColores.blanco,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(color: FixaColores.linea),
-                ),
-                child: Column(
-                  children: [
-                    _Dato(etiqueta: 'Tu código', valor: c.codigo),
-                    const Divider(height: 1, color: FixaColores.linea),
-                    _Dato(etiqueta: 'Tu clave', valor: c.clave),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(
+                        reporte.esApoyo
+                            ? '¡Apoyo registrado!'
+                            : '¡Reporte enviado!',
+                        style: tituloFixa(23))),
+              ],
+            ),
+            const SizedBox(height: 9),
+            Text(
+                'Guarda tu comprobante para consultar el avance cuando quieras.',
+                style: Theme.of(context).textTheme.bodySmall),
+            const SizedBox(height: 12),
+            TarjetaFixa(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Unidad asignada automáticamente',
+                      style: Theme.of(context).textTheme.bodySmall),
+                  const SizedBox(height: 5),
+                  Row(children: [
+                    Icon(iconoDe(categoria), color: FixaColores.hojaOscura),
+                    const SizedBox(width: 8),
+                    Expanded(
+                        child: Text(
+                            reporte.unidad.isEmpty
+                                ? 'Por asignar'
+                                : reporte.unidad,
+                            style: tituloFixa(17))),
+                  ]),
+                  if (estado != null) ...[
+                    const SizedBox(height: 5),
+                    EstadoFixa(estado),
                   ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            TarjetaFixa(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Dato(etiqueta: 'Código único', valor: credenciales.codigo),
+                  const Divider(height: 20, color: FixaColores.linea),
+                  _Dato(etiqueta: 'Clave privada', valor: credenciales.clave),
+                  const SizedBox(height: 13),
+                  Text('Guarda tu clave. No la compartas públicamente.',
+                      style: Theme.of(context).textTheme.bodySmall),
+                ],
+              ),
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                const Icon(Icons.verified_user_outlined,
+                    size: 20, color: FixaColores.hojaOscura),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.guardado
+                        ? 'Disponible en Mis reportes de este celular.'
+                        : 'Conserva el código y la clave para consultar el avance.',
+                    style: const TextStyle(
+                        fontSize: 13, color: FixaColores.tinta2),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Aviso(
-                tipo: guardado ? TipoAviso.info : TipoAviso.atencion,
-                texto: guardado
-                    ? 'Ya quedó guardado en este celular. Solo necesitas el código y la clave si cambias de celular.'
-                    : 'No lo guardaste en este celular. Anota el código y la clave: la clave no se puede recuperar.',
-              ),
-            ],
-          ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _AccionComprobante(
+                    icono: Icons.download_outlined,
+                    texto: 'Guardar imagen',
+                    onPressed: _exportando
+                        ? null
+                        : () => _exportar(reporte, imagen: true),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _AccionComprobante(
+                    icono: Icons.mail_outline,
+                    texto: 'Enviar por correo',
+                    onPressed: _exportando
+                        ? null
+                        : () => _exportar(reporte, imagen: false),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
-        bottomNavigationBar: BarraAccion(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              BotonPrincipal(
-                texto: 'Compartir o guardar',
-                icono: Icons.ios_share,
-                onPressed: () => SharePlus.instance.share(ShareParams(
-                  subject: 'Mi reporte de FIXA',
-                  text: 'Mi reporte de FIXA\nCódigo: ${c.codigo}\nClave: ${c.clave}\n'
-                      'Para seguirlo: abre FIXA → Seguir un reporte. No compartas la clave con otras personas.',
-                )),
+      ),
+      bottomNavigationBar: BarraAccion(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            BotonPrincipal(
+              texto: 'Ver seguimiento ahora',
+              icono: Icons.arrow_forward,
+              onPressed: () => context.push(
+                  '/reporte/${Uri.encodeComponent(credenciales.codigo)}',
+                  extra: credenciales),
+            ),
+            const SizedBox(height: 6),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  foregroundColor: FixaColores.hojaOscura,
+                  minimumSize: const Size.fromHeight(44),
+                  textStyle: const TextStyle(
+                      fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+                onPressed: () => context.go('/mapa'),
+                child: const Text('Volver al mapa'),
               ),
-              const SizedBox(height: 10),
-              OutlinedButton(onPressed: () => context.go('/'), child: const Text('Volver al inicio')),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
+class _AccionComprobante extends StatelessWidget {
+  const _AccionComprobante(
+      {required this.icono, required this.texto, this.onPressed});
+
+  final IconData icono;
+  final String texto;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+        height: 48,
+        child: OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: FixaColores.hojaOscura,
+            side: const BorderSide(color: FixaColores.linea),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            textStyle:
+                const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+          icon: Icon(icono, size: 20, color: FixaColores.hojaOscura),
+          label:
+              Text(texto, style: const TextStyle(color: FixaColores.hojaOscura)),
+          onPressed: onPressed,
+        ),
+      );
+}
+
 class _Dato extends StatelessWidget {
   const _Dato({required this.etiqueta, required this.valor});
+
   final String etiqueta;
   final String valor;
 
   @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 12, 14),
-      child: Row(
+  Widget build(BuildContext context) => Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(etiqueta, style: const TextStyle(fontWeight: FontWeight.w700, color: FixaColores.tinta2, fontSize: 14)),
-                SelectableText(valor, style: tituloFixa(28).copyWith(letterSpacing: 1)),
+                Text(etiqueta, style: Theme.of(context).textTheme.bodySmall),
+                const SizedBox(height: 4),
+                SelectableText(valor, style: tituloFixa(19)),
               ],
             ),
           ),
-          IconButton.filledTonal(
-            tooltip: 'Copiar $etiqueta'.toLowerCase(),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: valor));
-              if (context.mounted) mostrarMensaje(context, '${etiqueta.replaceFirst('Tu ', '')} copiado');
-            },
-            icon: const Icon(Icons.copy_rounded),
+          const SizedBox(width: 8),
+          Material(
+            color: FixaColores.menta,
+            borderRadius: BorderRadius.circular(10),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(10),
+              onTap: () async {
+                await Clipboard.setData(ClipboardData(text: valor));
+                if (context.mounted) {
+                  mostrarMensaje(context, 'Copiado al portapapeles.');
+                }
+              },
+              child: const Padding(
+                padding: EdgeInsets.all(10),
+                child: Icon(Icons.copy_outlined,
+                    size: 20, color: FixaColores.hojaOscura),
+              ),
+            ),
           ),
         ],
-      ),
-    );
-  }
+      );
 }

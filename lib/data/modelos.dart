@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 
+import 'direccion_osm.dart';
+
 /// Las 3 categorías de FIXA (RN-01). El código es el mismo que usa la API.
 enum CodigoCategoria {
   bache('Bache o calle dañada', 'Baches'),
-  alumbrado('Foco o poste sin luz', 'Alumbrado'),
+  alumbrado('Foco o poste sin luz', 'Luz'),
   residuos('Basura acumulada', 'Basura');
 
   const CodigoCategoria(this.etiqueta, this.corta);
@@ -15,11 +17,24 @@ enum CodigoCategoria {
 }
 
 class Categoria {
-  const Categoria({required this.codigo, required this.nombre, required this.descripcion});
+  const Categoria(
+      {required this.codigo,
+      required this.nombre,
+      required this.descripcion,
+      this.unidad});
 
   final CodigoCategoria codigo;
   final String nombre;
   final String descripcion;
+  final String? unidad;
+
+  String get unidadVisible =>
+      unidad ??
+      switch (codigo) {
+        CodigoCategoria.bache => 'Obras Públicas',
+        CodigoCategoria.alumbrado => 'Alumbrado Público',
+        CodigoCategoria.residuos => 'EMACRUZ',
+      };
 
   static Categoria? desdeJson(Map<String, dynamic> json) {
     final codigo = CodigoCategoria.desdeApi(json['codigo'] as String?);
@@ -28,6 +43,7 @@ class Categoria {
       codigo: codigo,
       nombre: json['nombre'] as String? ?? codigo.etiqueta,
       descripcion: json['descripcion'] as String? ?? '',
+      unidad: json['unidad'] as String?,
     );
   }
 }
@@ -43,7 +59,11 @@ class TipoIncidencia {
 
 /// Código y clave de un reporte. La clave nunca se muestra en la lista: solo se usa para consultar.
 class Credenciales {
-  const Credenciales({required this.codigo, required this.clave, this.categoria, this.guardadoEl});
+  const Credenciales(
+      {required this.codigo,
+      required this.clave,
+      this.categoria,
+      this.guardadoEl});
 
   final String codigo;
   final String clave;
@@ -67,7 +87,8 @@ class Credenciales {
 
 /// Respuesta de la API al crear un reporte o un apoyo (R05).
 class ReporteCreado {
-  const ReporteCreado({required this.credenciales, required this.unidad, this.esApoyo = false});
+  const ReporteCreado(
+      {required this.credenciales, required this.unidad, this.esApoyo = false});
   final Credenciales credenciales;
   final String unidad;
   final bool esApoyo;
@@ -136,7 +157,9 @@ class Seguimiento {
 
   /// El vecino puede confirmar la solución o pedir revisión hasta 15 días después del cierre (R12).
   bool puedeResponderCierre(DateTime ahora) =>
-      estado.cerrado && revisionDisponibleHasta != null && ahora.isBefore(revisionDisponibleHasta!);
+      estado.cerrado &&
+      revisionDisponibleHasta != null &&
+      ahora.isBefore(revisionDisponibleHasta!);
 
   factory Seguimiento.desdeJson(Map<String, dynamic> json) {
     final revision = json['revision'] as Map<String, dynamic>?;
@@ -147,10 +170,12 @@ class Seguimiento {
       unidad: json['unidad'] as String?,
       fechaRegistro: DateTime.parse(json['fechaRegistro'] as String),
       fechaCierre: DateTime.tryParse(json['fechaCierre'] as String? ?? ''),
-      ultimaActualizacion: DateTime.tryParse(json['ultimaActualizacion'] as String? ?? ''),
+      ultimaActualizacion:
+          DateTime.tryParse(json['ultimaActualizacion'] as String? ?? ''),
       esApoyo: json['esApoyo'] as bool? ?? false,
       conformidad: json['conformidad'] as bool?,
-      revisionDisponibleHasta: DateTime.tryParse(json['revisionDisponibleHasta'] as String? ?? ''),
+      revisionDisponibleHasta:
+          DateTime.tryParse(json['revisionDisponibleHasta'] as String? ?? ''),
       revisionEstado: revision?['estado'] as String?,
       revisionRespuesta: revision?['respuesta'] as String?,
     );
@@ -165,6 +190,7 @@ class CasoCercano {
     required this.tipo,
     required this.distanciaMetros,
     required this.vecinosQueReportaron,
+    this.desde,
   });
 
   final int casoId;
@@ -172,19 +198,26 @@ class CasoCercano {
   final String tipo;
   final int distanciaMetros;
   final int vecinosQueReportaron;
+  final DateTime? desde;
 
   factory CasoCercano.desdeJson(Map<String, dynamic> json) => CasoCercano(
         casoId: (json['casoId'] as num).toInt(),
         estado: json['estado'] as String? ?? '',
         tipo: json['tipo'] as String? ?? '',
         distanciaMetros: (json['distanciaMetros'] as num?)?.toInt() ?? 0,
-        vecinosQueReportaron: (json['vecinosQueReportaron'] as num?)?.toInt() ?? 1,
+        vecinosQueReportaron:
+            (json['vecinosQueReportaron'] as num?)?.toInt() ?? 1,
+        desde: DateTime.tryParse(json['desde'] as String? ?? ''),
       );
 }
 
 /// Punto anónimo del mapa público (la API redondea la ubicación).
 class PuntoMapa {
-  const PuntoMapa({required this.latitud, required this.longitud, required this.categoria, required this.estado});
+  const PuntoMapa(
+      {required this.latitud,
+      required this.longitud,
+      required this.categoria,
+      required this.estado});
   final double latitud;
   final double longitud;
   final CodigoCategoria? categoria;
@@ -198,11 +231,26 @@ class NuevoReporte {
   /// Se genera una vez por reporte: si el envío se corta y se reintenta, la API no lo duplica.
   final String claveIdempotencia;
   CodigoCategoria? categoria;
+  Categoria? fichaCategoria;
   TipoIncidencia? tipo;
   int? numeroLuminarias;
   Uint8List? foto;
   double? latitud;
   double? longitud;
+  DireccionOsm? direccion;
+
+  String get lugarVisible {
+    final nombre = [
+      direccion?.titulo,
+      direccion?.detalle,
+    ].whereType<String>().where((valor) => valor.isNotEmpty).join(' · ');
+    if (nombre.isNotEmpty) return nombre;
+    return latitud != null && longitud != null
+        ? '${latitud!.toStringAsFixed(5)}, ${longitud!.toStringAsFixed(5)}'
+        : 'Sin ubicación';
+  }
+
   String descripcion = '';
   String? correo;
+  String? tokenDispositivo;
 }
