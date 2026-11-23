@@ -72,25 +72,44 @@ class _MisReportesScreenState extends State<MisReportesScreen> {
           padding: const EdgeInsets.fromLTRB(16, 9, 16, 24),
           children: [
             Text('Reportes guardados en este celular',
-                style: Theme.of(context).textTheme.bodySmall),
+                style: const TextStyle(fontSize: 14, color: FixaColores.tinta2)),
             const SizedBox(height: 14),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.search),
-              label: const Text('Seguir con código'),
-              onPressed: () => context.push('/seguir'),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: FixaColores.hojaOscura,
+                  backgroundColor: FixaColores.blanco,
+                  side: const BorderSide(color: FixaColores.linea),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.search,
+                    color: FixaColores.hojaOscura, size: 22),
+                label: const Text('Seguir con código',
+                    style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: FixaColores.hojaOscura)),
+                onPressed: () => context.push('/seguir'),
+              ),
             ),
-            const SizedBox(height: 7),
-            Wrap(
-              spacing: 8,
+            const SizedBox(height: 14),
+            Row(
               children: [
-                for (final filtro in _Filtro.values)
+                for (final filtro in _Filtro.values) ...[
                   FiltroFixa(
-                      texto: filtro.etiqueta,
-                      activo: _filtro == filtro,
-                      onTap: () => setState(() => _filtro = filtro)),
+                    texto: filtro.etiqueta,
+                    activo: _filtro == filtro,
+                    onTap: () => setState(() => _filtro = filtro),
+                  ),
+                  const SizedBox(width: 8),
+                ],
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
             if (!mis.cargado)
               const LinearProgressIndicator()
             else if (visibles.isEmpty)
@@ -135,9 +154,9 @@ class _Tarjeta extends StatelessWidget {
     final ultimoCambio = detalle?.ultimaActualizacion ??
         detalle?.fechaCierre ??
         detalle?.fechaRegistro;
-    final nota = Theme.of(context).textTheme.bodySmall;
     return TarjetaFixa(
-      sombra: true,
+      sombra: false,
+      padding: const EdgeInsets.all(16),
       onTap: () =>
           context.push('/reporte/${Uri.encodeComponent(credenciales.codigo)}'),
       child: Column(
@@ -145,44 +164,56 @@ class _Tarjeta extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(iconoDe(categoria), color: FixaColores.hojaOscura, size: 23),
-              const SizedBox(width: 8),
+              Icon(iconoDe(categoria), color: FixaColores.hojaOscura, size: 24),
+              const SizedBox(width: 10),
               Expanded(child: Text(titulo, style: tituloFixa(17))),
-              const Icon(Icons.chevron_right, color: FixaColores.tinta2),
+              const Icon(Icons.chevron_right,
+                  color: FixaColores.tinta2, size: 20),
             ],
           ),
           const SizedBox(height: 4),
-          Text(credenciales.codigo, style: nota),
-          const SizedBox(height: 5),
+          Text(credenciales.codigo,
+              style:
+                  const TextStyle(fontSize: 13, color: FixaColores.tinta2)),
+          const SizedBox(height: 8),
           if (detalle != null) ...[
             EstadoFixa(detalle.estado),
             if (detalle.unidad case final unidad? when unidad.isNotEmpty) ...[
-              const SizedBox(height: 5),
-              Text(unidad, style: tituloFixa(13)),
+              const SizedBox(height: 8),
+              Text(unidad, style: tituloFixa(14)),
             ],
             if (ultimoCambio != null) ...[
-              const SizedBox(height: 5),
+              const SizedBox(height: 4),
               Text(
-                  'Actualizado: ${fechaCorta(ultimoCambio, incluirHora: true)}',
-                  style: nota),
+                'Actualizado: ${fechaCorta(ultimoCambio, incluirHora: true)}',
+                style: const TextStyle(
+                    fontSize: 13, color: FixaColores.tinta2),
+              ),
             ],
             if (detalle.estado.etapa case final etapa?) ...[
-              const SizedBox(height: 5),
+              const SizedBox(height: 8),
               BarrasFixa(
-                  actual: etapa.index + 1,
-                  total: Etapa.values.length,
-                  color: EstadoFixa.colorDe(detalle.estado)),
-              const SizedBox(height: 5),
+                actual: etapa.index + 1,
+                total: Etapa.values.length,
+                color: EstadoFixa.colorDe(detalle.estado),
+              ),
+              const SizedBox(height: 6),
               if (detalle.revisionDisponibleHasta case final limite?
                   when detalle.puedeResponderCierre(DateTime.now()) &&
                       detalle.conformidad == null)
                 Text('Revisa el cierre hasta el ${fechaCorta(limite)}.',
-                    style: nota?.copyWith(color: FixaColores.hojaOscura))
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: FixaColores.hojaOscura))
               else
-                Text('Recibido · Revisión · Atención · Cierre', style: nota),
+                const Text('Recibido · Revisión · Atención · Cierre',
+                    style: TextStyle(fontSize: 12, color: FixaColores.tinta2)),
             ],
           ] else if (error != null)
-            Text(error!, style: nota?.copyWith(color: FixaColores.error))
+            Text(error!,
+                style: const TextStyle(
+                    color: FixaColores.error, fontSize: 13))
           else
             const LinearProgressIndicator(minHeight: 3),
         ],

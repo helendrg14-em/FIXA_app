@@ -74,15 +74,16 @@ class _SeguirScreenState extends State<SeguirScreen> {
         appBar: AppBar(title: const Text('Seguir un reporte')),
         body: AutofillGroup(
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(15, 12, 15, 24),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
-              Text('Consulta con tu\ncódigo y clave', style: tituloFixa(28)),
-              const SizedBox(height: 22),
+              Text('Consulta con tu\ncódigo y clave', style: tituloFixa(26)),
+              const SizedBox(height: 16),
               const Text(
-                  'Los encontrarás en el comprobante que recibiste al enviar tu reporte.',
-                  style: TextStyle(color: FixaColores.tinta2)),
-              const SizedBox(height: 24),
-              Text('Código único', style: tituloFixa(16)),
+                'Los encontrarás en el comprobante que recibiste al enviar tu reporte.',
+                style: TextStyle(color: FixaColores.tinta2, fontSize: 14),
+              ),
+              const SizedBox(height: 22),
+              Text('Código único', style: tituloFixa(15)),
               const SizedBox(height: 8),
               TextField(
                 controller: _codigo,
@@ -90,10 +91,10 @@ class _SeguirScreenState extends State<SeguirScreen> {
                 textCapitalization: TextCapitalization.characters,
                 textInputAction: TextInputAction.next,
                 decoration:
-                    const InputDecoration(hintText: 'Código de tu comprobante'),
+                    const InputDecoration(hintText: 'FX-2026-000418'),
               ),
-              const SizedBox(height: 10),
-              Text('Clave privada', style: tituloFixa(16)),
+              const SizedBox(height: 14),
+              Text('Clave privada', style: tituloFixa(15)),
               const SizedBox(height: 8),
               TextField(
                 controller: _clave,
@@ -103,7 +104,7 @@ class _SeguirScreenState extends State<SeguirScreen> {
                 autocorrect: false,
                 enableSuggestions: false,
                 decoration: InputDecoration(
-                  hintText: 'Clave de tu comprobante',
+                  hintText: '••••••••',
                   suffixIcon: IconButton(
                     tooltip:
                         _verClave ? 'Ocultar la clave' : 'Mostrar la clave',
@@ -116,43 +117,58 @@ class _SeguirScreenState extends State<SeguirScreen> {
                 onSubmitted: (_) => _buscar(),
               ),
               if (_error case final error?) ...[
-                const SizedBox(height: 10),
+                const SizedBox(height: 12),
                 Aviso(texto: error, tipo: TipoAviso.error),
               ],
-              const SizedBox(height: 24),
+              const SizedBox(height: 22),
               BotonPrincipal(
-                  texto: 'Ver seguimiento',
-                  icono: Icons.search,
-                  cargando: _buscando,
-                  onPressed: _buscar),
+                texto: 'Ver seguimiento',
+                icono: Icons.search,
+                cargando: _buscando,
+                onPressed: _buscar,
+              ),
               const SizedBox(height: 22),
               TarjetaFixa(
+                padding: const EdgeInsets.all(16),
                 onTap: () => context.go('/mis-reportes'),
                 child: Row(
                   children: [
                     const Icon(Icons.format_list_bulleted,
-                        color: FixaColores.hojaOscura),
-                    const SizedBox(width: 8),
+                        color: FixaColores.hojaOscura, size: 24),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('¿Lo enviaste desde este celular?',
-                              style: tituloFixa(14)),
-                          const SizedBox(height: 4),
-                          Text('Búscalo en Mis reportes.',
-                              style: Theme.of(context).textTheme.bodySmall),
+                              style: tituloFixa(15)),
+                          const SizedBox(height: 3),
+                          const Text('Búscalo en Mis reportes.',
+                              style: TextStyle(
+                                  fontSize: 13, color: FixaColores.tinta2)),
                         ],
                       ),
                     ),
                     const Icon(Icons.chevron_right,
-                        color: FixaColores.hojaOscura),
+                        color: FixaColores.hojaOscura, size: 22),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
-              const TextoConIcono(Icons.verified_user_outlined,
-                  'Tu clave es privada. No la compartas.'),
+              const Row(
+                children: [
+                  Icon(Icons.verified_user_outlined,
+                      size: 20, color: FixaColores.hojaOscura),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Tu clave es privada. No la compartas.',
+                      style:
+                          TextStyle(fontSize: 13, color: FixaColores.tinta2),
+                    ),
+                  ),
+                ],
+              ),
             ],
           ),
         ),
