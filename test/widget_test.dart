@@ -24,6 +24,14 @@ Future<MisReportes> _abrirApp(WidgetTester tester,
   return mis;
 }
 
+/// Toca una tarjeta de Inicio. La pantalla de prueba es baja y la barra inferior tapa las
+/// últimas tarjetas, así que primero se desplaza hasta dejarla a la vista.
+Future<void> _tocarEnInicio(WidgetTester tester, Finder tarjeta) async {
+  await tester.ensureVisible(tarjeta);
+  await tester.pumpAndSettle();
+  await tester.tap(tarjeta);
+}
+
 void main() {
   group('Etapas del reporte', () {
     test('cada estado de la API cae en una de las 4 etapas del portal', () {
@@ -115,7 +123,7 @@ void main() {
   testWidgets('Reportar empieza en el paso 1 con las 3 categorías',
       (tester) async {
     await _abrirApp(tester);
-    await tester.tap(find.text('Ver mapa'));
+    await _tocarEnInicio(tester, find.text('Ver mapa'));
     await tester.pumpAndSettle();
     await tester.ensureVisible(find.text('Reportar un problema'));
     await tester.tap(find.text('Reportar un problema'));
@@ -146,7 +154,7 @@ void main() {
   testWidgets('Seguir un reporte con clave equivocada muestra el error',
       (tester) async {
     await _abrirApp(tester);
-    await tester.tap(find.text('Seguir reporte'));
+    await _tocarEnInicio(tester, find.text('Seguir reporte'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'FX-2026-999999');
     await tester.enterText(find.byType(TextField).last, 'AAA-BBBB');
@@ -162,7 +170,8 @@ void main() {
       const Credenciales(
           codigo: 'FX-2026-000391', clave: 'ABC-1234', categoria: 'Alumbrado')
     ]);
-    await tester.tap(find.text('Mis reportes'));
+    // En Inicio, «Mis reportes» está en la tarjeta y en la barra inferior.
+    await _tocarEnInicio(tester, find.text('Mis reportes').first);
     await tester.pumpAndSettle();
     await tester.pump(const Duration(seconds: 1));
     await tester.pumpAndSettle();
@@ -214,7 +223,7 @@ void main() {
           categoria: 'Bache',
           guardadoEl: DateTime.now()),
     ]);
-    await tester.tap(find.text('Seguir reporte'));
+    await _tocarEnInicio(tester, find.text('Seguir reporte'));
     await tester.pumpAndSettle();
 
     expect(find.text('Tus reportes en este celular'), findsOneWidget);
