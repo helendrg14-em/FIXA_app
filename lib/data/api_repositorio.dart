@@ -230,6 +230,7 @@ class ApiRepositorio implements Repositorio {
             categoria:
                 CodigoCategoria.desdeApi(propiedades['categoria'] as String?),
             estado: propiedades['estado'] as String? ?? '',
+            foto: propiedades['foto'] as String?,
           ));
         }
         return puntos;
