@@ -22,6 +22,23 @@ class MisReportes extends ChangeNotifier {
   String? errorDe(String codigo) => _errores[codigo];
   bool tiene(String codigo) => credencialesDe(codigo) != null;
 
+  /// Si el caso sigue abierto. Mientras no se conoce su estado, se trata como abierto.
+  bool vigente(String codigo) {
+    final estado = _estados[codigo]?.estado;
+    return estado == null || !(estado.cerrado || estado.terminoSinArreglo);
+  }
+
+  /// Los guardados con los abiertos primero y, dentro de cada grupo, del más reciente al más antiguo.
+  List<Credenciales> get recientes {
+    DateTime fecha(Credenciales c) =>
+        _estados[c.codigo]?.fechaRegistro ?? c.guardadoEl ?? DateTime(2000);
+    int abierto(Credenciales c) => vigente(c.codigo) ? 0 : 1;
+    return [..._guardados]..sort((a, b) {
+        final grupo = abierto(a).compareTo(abierto(b));
+        return grupo != 0 ? grupo : fecha(b).compareTo(fecha(a));
+      });
+  }
+
   Future<void> cargar() async {
     if (cargado) return;
     try {

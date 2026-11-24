@@ -241,8 +241,8 @@ class _AccionComprobante extends StatelessWidget {
                 const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
           ),
           icon: Icon(icono, size: 20, color: FixaColores.hojaOscura),
-          label:
-              Text(texto, style: const TextStyle(color: FixaColores.hojaOscura)),
+          label: Text(texto,
+              style: const TextStyle(color: FixaColores.hojaOscura)),
           onPressed: onPressed,
         ),
       );

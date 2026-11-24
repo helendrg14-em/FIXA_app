@@ -217,11 +217,19 @@ class PuntoMapa {
       {required this.latitud,
       required this.longitud,
       required this.categoria,
-      required this.estado});
+      required this.estado,
+      this.foto});
   final double latitud;
   final double longitud;
   final CodigoCategoria? categoria;
   final String estado;
+
+  /// URL de la foto del problema (Cloudinary), si el reporte la tiene.
+  final String? foto;
+
+  /// La misma foto recortada a una miniatura liviana, para no bajar la imagen completa.
+  String? get miniatura => foto?.replaceFirst(
+      '/image/upload/', '/image/upload/c_fill,w_440,h_224,q_auto,f_auto/');
 }
 
 /// Lo que el vecino va llenando en los 3 pasos del reporte.

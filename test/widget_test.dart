@@ -131,7 +131,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Foto y lugar'), findsOneWidget);
     expect(find.text('2 de 3'), findsOneWidget);
-    await tester.drag(find.byType(ListView).last, const Offset(0, -500));
+    expect(find.text('Toma o sube una foto del problema para continuar.'),
+        findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Editar'), 200,
+        scrollable: find.byType(Scrollable).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Editar'));
     await tester.pumpAndSettle();
@@ -169,6 +172,56 @@ void main() {
     await tester.scrollUntilVisible(find.text('Sí, quedó bien'), 180);
     expect(find.text('Sí, quedó bien'), findsOneWidget);
     // Deja terminar la consulta simulada que lanza la pantalla al abrirse.
+    await tester.pump(const Duration(seconds: 1));
+  });
+
+  test(
+      'Los reportes guardados se ordenan con los abiertos primero y los más recientes arriba',
+      () async {
+    final hoy = DateTime.now();
+    final antiguo = Credenciales(
+        codigo: 'FX-2026-000100',
+        clave: 'AAA111',
+        guardadoEl: hoy.subtract(const Duration(days: 10)));
+    final cerrado = Credenciales(
+        codigo: 'FX-2026-000391', clave: 'ABC-1234', guardadoEl: hoy);
+    final nuevo = Credenciales(
+        codigo: 'FX-2026-000200',
+        clave: 'BBB222',
+        guardadoEl: hoy.subtract(const Duration(days: 1)));
+    final mis = MisReportes(
+        MockRepositorio(), AlmacenEnMemoria([antiguo, cerrado, nuevo]));
+    await mis.cargar();
+    await mis.actualizar();
+
+    expect(mis.recientes.map((c) => c.codigo),
+        ['FX-2026-000200', 'FX-2026-000100', 'FX-2026-000391']);
+    expect(mis.vigente('FX-2026-000391'), isFalse);
+  });
+
+  testWidgets(
+      'Seguir un reporte muestra los guardados para no escribir el código',
+      (tester) async {
+    await _abrirApp(tester, [
+      Credenciales(
+          codigo: 'FX-2026-000391',
+          clave: 'ABC-1234',
+          categoria: 'Alumbrado',
+          guardadoEl: DateTime.now()),
+      Credenciales(
+          codigo: 'FX-2026-000200',
+          clave: 'BBB222',
+          categoria: 'Bache',
+          guardadoEl: DateTime.now()),
+    ]);
+    await tester.tap(find.text('Seguir reporte'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tus reportes en este celular'), findsOneWidget);
+    expect(find.text('¿Tienes otro código?'), findsOneWidget);
+    // El abierto va antes que el cerrado.
+    expect(tester.getTopLeft(find.text('FX-2026-000200')).dy,
+        lessThan(tester.getTopLeft(find.text('FX-2026-000391')).dy));
     await tester.pump(const Duration(seconds: 1));
   });
 }
