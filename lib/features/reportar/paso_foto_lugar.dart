@@ -56,14 +56,17 @@ class _PasoFotoLugarState extends State<PasoFotoLugar> {
     }
   }
 
-  Future<void> _tomarFoto() async {
+  /// Toma la foto con la cámara o la elige de la galería del teléfono.
+  Future<void> _elegirFoto(ImageSource origen) async {
     if (_procesandoFoto) return;
     setState(() => _procesandoFoto = true);
     try {
       XFile? foto;
       try {
-        foto = await _selector.pickImage(source: ImageSource.camera);
+        foto = await _selector.pickImage(source: origen);
       } catch (_) {
+        // Sin cámara (por ejemplo, en algunos emuladores) se abre la galería.
+        if (origen != ImageSource.camera) rethrow;
         foto = await _selector.pickImage(source: ImageSource.gallery);
       }
       if (foto == null || !mounted) return;
@@ -136,7 +139,7 @@ class _PasoFotoLugarState extends State<PasoFotoLugar> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Foto del problema', style: tituloFixa(17)),
+              Text('Foto obligatoria', style: tituloFixa(17)),
               const SizedBox(height: 10),
               ClipRRect(
                 borderRadius: BorderRadius.circular(12),
@@ -158,25 +161,47 @@ class _PasoFotoLugarState extends State<PasoFotoLugar> {
                 ),
               ),
               const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed:
-                    _procesandoFoto || widget.bloqueado ? null : _tomarFoto,
-                icon: const Icon(Icons.photo_camera_outlined,
-                    color: FixaColores.hojaOscura),
-                label: Text(
-                  reporte.foto == null ? 'Tomar foto' : 'Cambiar foto',
-                  style: const TextStyle(
-                      color: FixaColores.hojaOscura,
-                      fontWeight: FontWeight.w700),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: FixaColores.linea),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: _BotonFoto(
+                      texto: 'Tomar foto',
+                      icono: Icons.photo_camera_outlined,
+                      onPressed: _procesandoFoto || widget.bloqueado
+                          ? null
+                          : () => _elegirFoto(ImageSource.camera),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _BotonFoto(
+                      texto: 'Subir foto',
+                      icono: Icons.photo_library_outlined,
+                      onPressed: _procesandoFoto || widget.bloqueado
+                          ? null
+                          : () => _elegirFoto(ImageSource.gallery),
+                    ),
+                  ),
+                ],
               ),
-
+              // Explica por qué «Continuar» sigue deshabilitado.
+              if (reporte.foto == null && !_procesandoFoto) ...[
+                const SizedBox(height: 10),
+                const Row(
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 18, color: FixaColores.tinta2),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Toma o sube una foto del problema para continuar.',
+                        style:
+                            TextStyle(fontSize: 13, color: FixaColores.tinta2),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
@@ -284,8 +309,8 @@ class _PinLugar extends StatelessWidget {
             )
           ],
         ),
-        child: const Icon(Icons.location_on,
-            color: FixaColores.blanco, size: 20),
+        child:
+            const Icon(Icons.location_on, color: FixaColores.blanco, size: 20),
       );
 }
 
@@ -344,55 +369,60 @@ class _EditarLugarState extends State<_EditarLugar> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Editar ubicación')),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(14, 8, 14, 24),
-          children: [
-            BuscarDireccion(
-              etiqueta: 'Buscar dirección o referencia',
-              alElegir: (direccion) => _elegir(direccion.punto, direccion),
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: SizedBox(
-                height: 300,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    MapaOsm(
-                      centro: _punto,
-                      zoom: 16,
-                      controlador: _mapa,
-                      alTocar: (_, punto) => _elegir(punto),
-                      alMover: (camara, gesto) {
-                        if (!gesto) return;
-                        _punto = camara.center;
-                        _direccion = null;
-                      },
-                    ),
-                    const IgnorePointer(child: Center(child: _PinLugar())),
-                    Positioned(
-                      right: 8,
-                      bottom: 28,
-                      child: IconButton.filled(
-                        tooltip: 'Usar mi ubicación',
-                        onPressed: _ubicando ? null : _ubicar,
-                        icon: _ubicando
-                            ? const SizedBox.square(
-                                dimension: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.my_location),
+        // El teclado se pone encima del mapa en vez de achicarlo.
+        resizeToAvoidBottomInset: false,
+        // El mapa ocupa todo el alto libre de la pantalla, como en una app de mapas.
+        body: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              BuscarDireccion(
+                etiqueta: 'Buscar dirección o referencia',
+                alElegir: (direccion) => _elegir(direccion.punto, direccion),
+              ),
+              const SizedBox(height: 12),
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      MapaOsm(
+                        centro: _punto,
+                        zoom: 16,
+                        controlador: _mapa,
+                        alTocar: (_, punto) => _elegir(punto),
+                        alMover: (camara, gesto) {
+                          if (!gesto) return;
+                          _punto = camara.center;
+                          _direccion = null;
+                        },
                       ),
-                    ),
-                  ],
+                      const IgnorePointer(child: Center(child: _PinLugar())),
+                      Positioned(
+                        right: 8,
+                        bottom: 28,
+                        child: IconButton.filled(
+                          tooltip: 'Usar mi ubicación',
+                          onPressed: _ubicando ? null : _ubicar,
+                          icon: _ubicando
+                              ? const SizedBox.square(
+                                  dimension: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2))
+                              : const Icon(Icons.my_location),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Text('Mueve el mapa hasta el lugar del problema.',
-                style: Theme.of(context).textTheme.bodySmall),
-          ],
+              const SizedBox(height: 10),
+              Text('Mueve el mapa hasta el lugar del problema.',
+                  style: Theme.of(context).textTheme.bodySmall),
+            ],
+          ),
         ),
         bottomNavigationBar: BarraAccion(
           child: BotonPrincipal(
@@ -400,6 +430,32 @@ class _EditarLugarState extends State<_EditarLugar> {
             icono: Icons.check,
             onPressed: () => Navigator.pop(context, _Lugar(_punto, _direccion)),
           ),
+        ),
+      );
+}
+
+/// Botón con borde para tomar o subir la foto del problema.
+class _BotonFoto extends StatelessWidget {
+  const _BotonFoto(
+      {required this.texto, required this.icono, required this.onPressed});
+  final String texto;
+  final IconData icono;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) => OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icono, color: FixaColores.hojaOscura),
+        label: Text(
+          texto,
+          style: const TextStyle(
+              color: FixaColores.hojaOscura, fontWeight: FontWeight.w700),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: FixaColores.linea),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(vertical: 12),
         ),
       );
 }
