@@ -151,10 +151,10 @@ void main() {
     expect(find.text('Ubicación'), findsOneWidget);
   });
 
-  testWidgets('Seguir un reporte con clave equivocada muestra el error',
+  testWidgets('Consultar seguimiento con clave equivocada muestra el error',
       (tester) async {
     await _abrirApp(tester);
-    await _tocarEnInicio(tester, find.text('Seguir reporte'));
+    await _tocarEnInicio(tester, find.text('Consultar seguimiento'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField).first, 'FX-2026-999999');
     await tester.enterText(find.byType(TextField).last, 'AAA-BBBB');
@@ -209,7 +209,7 @@ void main() {
   });
 
   testWidgets(
-      'Seguir un reporte muestra los guardados para no escribir el código',
+      'Consultar seguimiento muestra los guardados para no escribir el código',
       (tester) async {
     await _abrirApp(tester, [
       Credenciales(
@@ -223,7 +223,7 @@ void main() {
           categoria: 'Bache',
           guardadoEl: DateTime.now()),
     ]);
-    await _tocarEnInicio(tester, find.text('Seguir reporte'));
+    await _tocarEnInicio(tester, find.text('Consultar seguimiento'));
     await tester.pumpAndSettle();
 
     expect(find.text('Tus reportes en este celular'), findsOneWidget);

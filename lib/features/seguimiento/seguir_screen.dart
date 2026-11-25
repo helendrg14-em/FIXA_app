@@ -94,7 +94,7 @@ class _SeguirScreenState extends State<SeguirScreen> {
     final mis = context.watch<MisReportes>();
     final guardados = mis.recientes;
     return Scaffold(
-      appBar: AppBar(title: const Text('Seguir un reporte')),
+      appBar: AppBar(title: const Text('Consultar seguimiento')),
       body: AutofillGroup(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),

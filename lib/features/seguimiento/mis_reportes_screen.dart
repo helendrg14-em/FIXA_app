@@ -90,7 +90,7 @@ class _MisReportesScreenState extends State<MisReportesScreen> {
                 ),
                 icon: const Icon(Icons.search,
                     color: FixaColores.hojaOscura, size: 22),
-                label: const Text('Seguir con código',
+                label: const Text('Consultar seguimiento',
                     style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,

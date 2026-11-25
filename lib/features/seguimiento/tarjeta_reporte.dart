@@ -6,7 +6,7 @@ import '../../data/modelos.dart';
 import '../../ui/comunes.dart';
 
 /// Un reporte guardado en el celular: categoría, código, estado y avance. Se usa en
-/// «Mis reportes» y en «Seguir un reporte».
+/// «Mis reportes» y en «Consultar seguimiento».
 class TarjetaReporte extends StatelessWidget {
   const TarjetaReporte(
       {super.key, required this.credenciales, this.seguimiento, this.error});

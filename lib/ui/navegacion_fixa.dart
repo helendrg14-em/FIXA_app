@@ -9,7 +9,7 @@ class NavegacionFixa extends StatelessWidget {
   final String ruta;
   final Widget child;
 
-  // «Seguir reporte» se abre desde Inicio; la barra deja las tres pantallas principales.
+  // «Consultar seguimiento» se abre desde Inicio; la barra deja las tres pantallas principales.
   static const _destinos = [
     ('/', 'Inicio', Icons.home_outlined),
     ('/mapa', 'Mapa', Icons.map_outlined),
