@@ -9,15 +9,15 @@ class NavegacionFixa extends StatelessWidget {
   final String ruta;
   final Widget child;
 
+  // «Consultar seguimiento» se abre desde Inicio; la barra deja las tres pantallas principales.
   static const _destinos = [
+    ('/', 'Inicio', Icons.home_outlined),
     ('/mapa', 'Mapa', Icons.map_outlined),
-    ('/seguir', 'Seguir reporte', Icons.search_outlined),
     ('/mis-reportes', 'Mis reportes', Icons.format_list_bulleted),
   ];
 
   @override
   Widget build(BuildContext context) {
-    if (ruta == '/') return child;
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
@@ -89,7 +89,8 @@ class _Destino extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
-                    fontWeight: seleccionado ? FontWeight.w800 : FontWeight.w600,
+                    fontWeight:
+                        seleccionado ? FontWeight.w800 : FontWeight.w600,
                     color: color,
                   ),
                 ),

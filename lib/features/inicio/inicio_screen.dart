@@ -32,27 +32,30 @@ class InicioScreen extends StatelessWidget {
                     destacado: true,
                   ),
                   const SizedBox(height: 12),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: _Acceso(
-                          titulo: 'Mis reportes',
-                          detalle: 'En este celular',
-                          icono: Icons.format_list_bulleted,
-                          onTap: () => context.go('/mis-reportes'),
+                  // Misma altura para las dos tarjetas aunque un título ocupe dos líneas.
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _Acceso(
+                            titulo: 'Mis reportes',
+                            detalle: 'En este celular',
+                            icono: Icons.format_list_bulleted,
+                            onTap: () => context.go('/mis-reportes'),
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _Acceso(
-                          titulo: 'Seguir reporte',
-                          detalle: 'Con código y clave',
-                          icono: Icons.search,
-                          onTap: () => context.push('/seguir'),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _Acceso(
+                            titulo: 'Consultar seguimiento',
+                            detalle: 'Con código y clave',
+                            icono: Icons.search,
+                            onTap: () => context.push('/seguir'),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
