@@ -27,7 +27,9 @@ Future<MisReportes> _abrirApp(WidgetTester tester,
 /// Toca una tarjeta de Inicio. La pantalla de prueba es baja y la barra inferior tapa las
 /// últimas tarjetas, así que primero se desplaza hasta dejarla a la vista.
 Future<void> _tocarEnInicio(WidgetTester tester, Finder tarjeta) async {
-  await tester.ensureVisible(tarjeta);
+  // La lista de Inicio construye solo lo visible: se desplaza hasta que la tarjeta exista.
+  await tester.scrollUntilVisible(tarjeta, 120,
+      scrollable: find.byType(Scrollable).first);
   await tester.pumpAndSettle();
   await tester.tap(tarjeta);
 }
@@ -116,17 +118,14 @@ void main() {
   testWidgets('La app abre en el inicio, sin pedir cuenta', (tester) async {
     await _abrirApp(tester);
     expect(find.text('Tu ciudad mejora contigo.'), findsOneWidget);
-    expect(find.text('Ver mapa'), findsOneWidget);
+    expect(find.text('Reportar un problema'), findsOneWidget);
     expect(find.text('Ingresar'), findsNothing);
   });
 
   testWidgets('Reportar empieza en el paso 1 con las 3 categorías',
       (tester) async {
     await _abrirApp(tester);
-    await _tocarEnInicio(tester, find.text('Ver mapa'));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Reportar un problema'));
-    await tester.tap(find.text('Reportar un problema'));
+    await _tocarEnInicio(tester, find.text('Reportar un problema'));
     await tester.pumpAndSettle();
     expect(find.text('1 de 3'), findsOneWidget);
     for (final c in CodigoCategoria.values) {
