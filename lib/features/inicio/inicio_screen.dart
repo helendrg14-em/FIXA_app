@@ -24,12 +24,10 @@ class InicioScreen extends StatelessWidget {
                   const SizedBox(height: 12),
                   Text('Tu ciudad mejora contigo.', style: tituloFixa(23)),
                   const SizedBox(height: 24),
-                  _Acceso(
-                    titulo: 'Ver mapa',
-                    detalle: 'Explora y reporta un problema',
-                    icono: Icons.map_outlined,
-                    onTap: () => context.go('/mapa'),
-                    destacado: true,
+                  BotonPrincipal(
+                    texto: 'Reportar un problema',
+                    icono: Icons.photo_camera_outlined,
+                    onPressed: () => context.push('/reportar'),
                   ),
                   const SizedBox(height: 12),
                   // Misma altura para las dos tarjetas aunque un título ocupe dos líneas.
@@ -65,57 +63,31 @@ class InicioScreen extends StatelessWidget {
       );
 }
 
+/// Tarjeta de acceso secundaria de Inicio (Mis reportes y Consultar seguimiento).
 class _Acceso extends StatelessWidget {
   const _Acceso(
       {required this.titulo,
       required this.detalle,
       required this.icono,
-      required this.onTap,
-      this.destacado = false});
+      required this.onTap});
 
   final String titulo;
   final String detalle;
   final IconData icono;
   final VoidCallback onTap;
-  final bool destacado;
 
   @override
-  Widget build(BuildContext context) {
-    final textos = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(titulo,
-            style: tituloFixa(destacado ? 17 : 16,
-                color: destacado ? FixaColores.blanco : FixaColores.tinta)),
-        const SizedBox(height: 6),
-        Text(detalle,
-            style: TextStyle(
-                fontSize: 13,
-                color: destacado ? FixaColores.blanco : FixaColores.tinta2)),
-      ],
-    );
-    final insignia = IconoFixa(icono,
-        fondo: destacado ? FixaColores.lima : FixaColores.menta,
-        tamano: destacado ? 46 : 40);
-    return TarjetaFixa(
-      fondo: destacado ? FixaColores.bosque : FixaColores.blanco,
-      borde: destacado ? FixaColores.bosque : FixaColores.linea,
-      sombra: !destacado,
-      padding: const EdgeInsets.all(16),
-      onTap: onTap,
-      child: destacado
-          ? Row(children: [
-              insignia,
-              const SizedBox(width: 12),
-              Expanded(child: textos),
-              const SizedBox(width: 8),
-              const Icon(Icons.arrow_forward, color: FixaColores.blanco),
-            ])
-          : Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              insignia,
-              const SizedBox(height: 10),
-              textos,
-            ]),
-    );
-  }
+  Widget build(BuildContext context) => TarjetaFixa(
+        sombra: true,
+        padding: const EdgeInsets.all(16),
+        onTap: onTap,
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          IconoFixa(icono, fondo: FixaColores.menta, tamano: 40),
+          const SizedBox(height: 10),
+          Text(titulo, style: tituloFixa(16)),
+          const SizedBox(height: 6),
+          Text(detalle,
+              style: const TextStyle(fontSize: 13, color: FixaColores.tinta2)),
+        ]),
+      );
 }
